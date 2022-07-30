@@ -23,6 +23,7 @@ var args struct {
 	History     string
 	Copy        bool
 	DeepCopy    bool
+	GC          bool
 }
 
 func init() {
@@ -33,6 +34,7 @@ func init() {
 	flag.BoolVar(&args.Copy, "cp", false, "copy kv")
 	flag.BoolVar(&args.DeepCopy, "dcp", false, "deep copy kv")
 	flag.BoolVar(&args.Rename, "rename", false, "rename key")
+	flag.BoolVar(&args.GC, "gc", false, "garbage collection")
 	flag.Parse()
 }
 
@@ -196,6 +198,13 @@ func init() {
 		} else {
 			tx.Commit()
 		}
+		os.Exit(0)
+	}
+	if args.GC {
+		if err := tx.Raw("VACUUM").Error; err != nil {
+			fmt.Println(err.Error())
+		}
+		tx.Commit()
 		os.Exit(0)
 	}
 }
