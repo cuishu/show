@@ -87,7 +87,7 @@ func edit(tx *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	if kv.Value == string(kv.Value) {
+	if kv.Value == string(data) {
 		return nil
 	}
 	if err := tx.Save(&KV{Key: args.Key, Value: string(data)}).Error; err != nil {
