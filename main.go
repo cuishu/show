@@ -152,6 +152,12 @@ func doRename(tx *gorm.DB, src, dist string) error {
 }
 
 func init() {
+	if args.GC {
+		if err := db.Exec("VACUUM").Error; err != nil {
+			fmt.Println(err.Error())
+		}
+		os.Exit(0)
+	}
 	tx := db.Session(&gorm.Session{}).Begin()
 	defer tx.Rollback()
 	if args.ListAllKeys {
@@ -198,13 +204,6 @@ func init() {
 		} else {
 			tx.Commit()
 		}
-		os.Exit(0)
-	}
-	if args.GC {
-		if err := tx.Raw("VACUUM").Error; err != nil {
-			fmt.Println(err.Error())
-		}
-		tx.Commit()
 		os.Exit(0)
 	}
 }
