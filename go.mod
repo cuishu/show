@@ -1,4 +1,4 @@
-module show
+module github.com/cuishu/show
 
 go 1.17
 
