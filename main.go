@@ -6,10 +6,14 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path"
+	"strings"
 	"time"
 
 	"os"
 
+	"github.com/cuishu/functools"
+	"github.com/cuishu/show/shell"
+	"github.com/mattn/go-runewidth"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -24,6 +28,7 @@ var args struct {
 	Copy        bool
 	DeepCopy    bool
 	GC          bool
+	Shell       bool
 }
 
 func init() {
@@ -35,6 +40,7 @@ func init() {
 	flag.BoolVar(&args.DeepCopy, "dcp", false, "deep copy kv")
 	flag.BoolVar(&args.Rename, "rename", false, "rename key")
 	flag.BoolVar(&args.GC, "gc", false, "garbage collection")
+	flag.BoolVar(&args.Shell, "shell", false, "shell")
 	flag.Parse()
 }
 
@@ -111,7 +117,7 @@ func doDelete(tx *gorm.DB, key string) error {
 
 func showHistory() {
 	var histories []History
-	db.Where("key = ?", args.History).Order("id DESC").Find(&histories)
+	db.Where("key = ?", args.History).Order("id ASC").Limit(32).Find(&histories)
 	for _, h := range histories {
 		fmt.Println(h.CreatedAt.Format("2006-01-02 15:04:05"))
 		fmt.Println(h.Value)
@@ -152,6 +158,10 @@ func doRename(tx *gorm.DB, src, dist string) error {
 }
 
 func init() {
+	if args.Shell {
+		shell.Shell()
+		os.Exit(0)
+	}
 	if args.GC {
 		if err := db.Exec("VACUUM").Error; err != nil {
 			fmt.Println(err.Error())
@@ -166,7 +176,10 @@ func init() {
 		for _, kv := range kvs {
 			var n int64
 			db.Model(&History{}).Where("key = ?", kv.Key).Count(&n)
-			fmt.Printf("%-50s %5d version\n", kv.Key, n)
+			width := functools.Sum(functools.Map(func(r rune) int {
+				return runewidth.RuneWidth(r)
+			}, []rune(kv.Key)))
+			fmt.Printf("%s%s%5d version\n", kv.Key, strings.Repeat(" ", 50-width), n)
 		}
 		os.Exit(0)
 	}
